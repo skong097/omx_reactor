@@ -14,6 +14,8 @@ OMX joint 매핑:
 """
 from __future__ import annotations
 
+import random
+
 from builtin_interfaces.msg import Duration
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
@@ -34,6 +36,34 @@ def _traj(points: list[JointTrajectoryPoint]) -> JointTrajectory:
     t.joint_names = list(JOINT_NAMES)
     t.points = points
     return t
+
+
+def _chain(*trajectories: JointTrajectory) -> JointTrajectory:
+    """Concatenate JointTrajectory objects with cumulative time offsets.
+
+    All inputs must share joint_names. The i-th input's point times are
+    shifted by the sum of the (i-1) preceding inputs' final time_from_start.
+
+    Returns a new JointTrajectory; inputs are not mutated.
+    """
+    assert trajectories, '_chain requires at least one trajectory'
+    base_names = list(trajectories[0].joint_names)
+    for t in trajectories[1:]:
+        assert list(t.joint_names) == base_names, \
+            f'_chain joint_names mismatch: {list(t.joint_names)} vs {base_names}'
+
+    out_points: list[JointTrajectoryPoint] = []
+    offset = 0.0
+    for t in trajectories:
+        for p in t.points:
+            p_time = p.time_from_start.sec + p.time_from_start.nanosec * 1e-9
+            out_points.append(_point(list(p.positions), p_time + offset))
+        last = t.points[-1]
+        offset += last.time_from_start.sec + last.time_from_start.nanosec * 1e-9
+
+    out = _traj(out_points)
+    out.joint_names = base_names
+    return out
 
 
 def traj_idle() -> JointTrajectory:
@@ -62,18 +92,6 @@ def traj_bye() -> JointTrajectory:
         _point([0.0, -1.0, 0.5, 1.0],  3.0),
         _point([0.0, -1.0, 0.5, 0.0],  3.75),
         _point(HOME,                   4.5),
-    ])
-
-
-def traj_dance() -> JointTrajectory:
-    """joint1 base ±0.8rad swing × 3 + joint4 wave, 4s."""
-    return _traj([
-        _point(HOME,                    0.4),
-        _point([ 0.8, -1.0, 0.5, 1.0],  1.0),
-        _point([-0.8, -1.0, 0.5, 0.0],  1.8),
-        _point([ 0.8, -1.0, 0.5, 1.0],  2.6),
-        _point([-0.8, -1.0, 0.5, 0.0],  3.4),
-        _point(HOME,                    4.0),
     ])
 
 
@@ -232,6 +250,27 @@ def traj_twinkle() -> JointTrajectory:
         _point(TW_R, 3.1),
         _point(HOME, 3.6),
     ])
+
+
+# ─── DANCE composite — random sample from happy sub-motion pool ──────────
+_DANCE_POOL: tuple = (
+    traj_twinkle, traj_hands_up, traj_hands_up_wave,
+    traj_cheer, traj_heart, traj_nod, traj_strong,
+)
+_DANCE_SAMPLE_N: int = 3
+
+
+def traj_dance(*, _rng: random.Random | None = None) -> JointTrajectory:
+    """Happy 7 풀에서 3개 random sample (without replacement) → _chain.
+    매 호출마다 다른 안무. 모든 sub-motion 이 HOME 시작/종료라 chain 경계
+    velocity = 0 → 2.5 rad/s 게이트 안전.
+
+    Args:
+      _rng: 테스트용. None 이면 module random 사용 (런타임 경로).
+    """
+    rng = _rng if _rng is not None else random
+    picks = rng.sample(_DANCE_POOL, _DANCE_SAMPLE_N)
+    return _chain(*(f() for f in picks))
 
 
 # ─── gripper trajectory — 별 controller (/gripper_controller/follow_joint_trajectory) ───

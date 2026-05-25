@@ -91,3 +91,80 @@ def test_max_velocity_within_limit(factory):
             assert v <= MAX_VELOCITY_RAD_S, \
                 (f'{factory.__name__} joint{j+1} segment {i}->{i+1}: '
                  f'v={v:.2f} > {MAX_VELOCITY_RAD_S} rad/s')
+
+
+# ─── _chain helper tests ────────────────────────────────────────────────
+from omx_reactor.trajectories import _chain, _traj, _point, HOME, JOINT_NAMES
+
+
+def _t(*pairs):
+    """Helper: build a JointTrajectory from (positions, t_sec) pairs."""
+    return _traj([_point(list(pos), t) for pos, t in pairs])
+
+
+def test_chain_offsets_second_trajectory_times():
+    """Second trajectory's point times are shifted by first trajectory's last time."""
+    a = _t((HOME, 0.4), (HOME, 1.0))                       # last = 1.0
+    b = _t((HOME, 0.4), (HOME, 0.8))                       # last = 0.8 (orig)
+    result = _chain(a, b)
+    times = [p.time_from_start.sec + p.time_from_start.nanosec * 1e-9
+             for p in result.points]
+    # a's 2 points then b's 2 points shifted by 1.0
+    assert times == pytest.approx([0.4, 1.0, 1.4, 1.8])
+
+
+def test_chain_time_strictly_monotonic():
+    """Chained trajectory's times must be strictly monotonic."""
+    a = _t((HOME, 0.4), (HOME, 1.0))
+    b = _t((HOME, 0.4), (HOME, 0.8))
+    c = _t((HOME, 0.3), (HOME, 0.7))
+    result = _chain(a, b, c)
+    times = [p.time_from_start.sec + p.time_from_start.nanosec * 1e-9
+             for p in result.points]
+    assert all(t2 > t1 for t1, t2 in zip(times, times[1:])), times
+
+
+def test_chain_preserves_joint_names():
+    """Chained trajectory inherits joint_names from inputs."""
+    a = _t((HOME, 0.4))
+    b = _t((HOME, 0.5))
+    result = _chain(a, b)
+    assert list(result.joint_names) == JOINT_NAMES
+
+
+def test_chain_rejects_mismatched_joint_names():
+    """_chain raises if inputs have different joint_names."""
+    a = _t((HOME, 0.4))
+    b = _traj([_point([0.0], 0.5)])
+    b.joint_names = ['gripper_left_joint']
+    with pytest.raises(AssertionError):
+        _chain(a, b)
+
+
+# ─── traj_dance random sequence tests ──────────────────────────────────
+import random as _random
+
+
+def test_dance_deterministic_with_seed():
+    """Same seed → identical trajectory positions sequence."""
+    a = traj_dance(_rng=_random.Random(42))
+    b = traj_dance(_rng=_random.Random(42))
+    pos_a = [tuple(p.positions) for p in a.points]
+    pos_b = [tuple(p.positions) for p in b.points]
+    assert pos_a == pos_b
+
+
+def test_dance_varies_across_seeds():
+    """Different seeds → different sub-motion samples (different point counts or positions)."""
+    a = traj_dance(_rng=_random.Random(0))
+    b = traj_dance(_rng=_random.Random(1))
+    pos_a = [tuple(p.positions) for p in a.points]
+    pos_b = [tuple(p.positions) for p in b.points]
+    assert pos_a != pos_b
+
+
+def test_dance_composes_three_sub_motions():
+    """traj_dance chains 3 sub-motions — point count must be sum of 3 pool members'
+    point counts (every pool member has ≥3 points, so total ≥9)."""
+    t = traj_dance(_rng=_random.Random(0))
+    assert len(t.points) >= 9
