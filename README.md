@@ -110,7 +110,6 @@ ROBOTIS 의 default world 에는 Sensors plugin 빠져 있어 dashboard 의 OMX 
 
 `src/vendored/README.md` 의 외부 모델 부트스트랩 절차 참고 (face_landmarker / efficientdet_lite0 / gesture_recognizer / hand_landmarker — 총 4 파일, ~23MB).
 
-## Installation
 
 ## Installation
 
@@ -141,6 +140,8 @@ ROBOTIS 의 default world 에는 Sensors plugin 빠져 있어 dashboard 의 OMX 
   
   ls -lh "$MODELS_DIR" "$GESTURE_DIR"
   # 4 파일: 3.6M / 4.4M / 8.0M / 7.5M
+  
+  
   
 # 빌드
 source /opt/ros/jazzy/setup.bash
