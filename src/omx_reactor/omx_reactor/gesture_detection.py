@@ -53,27 +53,34 @@ def classify_hand_state(
     wrist_y_normalized: float,
     is_waving: bool,
     thumb_index_distance: float | None = None,
+    handedness: str | None = None,
     up_threshold: float = 0.55,
     gripper_open_threshold: float = 0.20,
     gripper_close_threshold: float = 0.05,
 ) -> str | None:
-    """recognized gesture + wrist 위치 + wave + thumb-index distance → event_type.
+    """recognized gesture + wrist 위치 + wave + handedness + thumb-index distance → event_type.
 
     매핑:
     - Open_Palm + wrist y < up_threshold + wave → 'hands_up_wave'
     - Open_Palm + wrist y < up_threshold      → 'hands_up'
     - Open_Palm + wrist 중간 + wave           → 'twinkle'
+    - Open_Palm + wrist 중간 + handedness='Right' → 'handshake_offer'
     - Open_Palm + wrist 중간                 → 'hand_visible'
     - Pointing_Up/Thumb_Up/.../Closed_Fist  → 직접 매핑 (소문자 event_type)
     - 그 외 gesture None/unknown + distance fallback:
       - distance > gripper_open_threshold  → 'gripper_open'
       - distance < gripper_close_threshold → 'gripper_close'
     """
-    # Open_Palm — wrist 위치 + wave 결합
+    # Open_Palm — wrist 위치 + wave + handedness 결합
     if gesture == 'Open_Palm':
         if wrist_y_normalized < up_threshold:
             return 'hands_up_wave' if is_waving else 'hands_up'
-        return 'twinkle' if is_waving else 'hand_visible'
+        # wrist 중간
+        if is_waving:
+            return 'twinkle'
+        if handedness == 'Right':
+            return 'handshake_offer'
+        return 'hand_visible'
     # 다른 gesture 직접 매핑
     if gesture and gesture in _GESTURE_DIRECT_MAP:
         return _GESTURE_DIRECT_MAP[gesture]

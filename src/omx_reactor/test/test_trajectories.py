@@ -3,7 +3,8 @@ import pytest
 from omx_reactor.trajectories import (
     traj_idle, traj_hello, traj_bye, traj_dance, traj_freeze, traj_console,
     traj_hand_out, traj_hands_up, traj_hands_up_wave,
-    traj_point_back, traj_nod, traj_cheer, traj_heart, traj_strong, traj_sad, traj_twinkle,
+    traj_point_back, traj_nod, traj_cheer, traj_heart, traj_strong, traj_handshake,
+    traj_sad, traj_twinkle,
     traj_gripper_open, traj_gripper_close,
     JOINT_NAMES, GRIPPER_JOINT_NAMES,
 )
@@ -12,8 +13,8 @@ from omx_reactor.trajectories import (
 # arm controller trajectory (joint1~4) — 모든 검증 항목 적용
 ALL_FACTORIES = [traj_idle, traj_hello, traj_bye, traj_dance, traj_freeze, traj_console,
                  traj_hand_out, traj_hands_up, traj_hands_up_wave,
-                 traj_point_back, traj_nod, traj_cheer, traj_heart, traj_strong, traj_sad,
-                 traj_twinkle]
+                 traj_point_back, traj_nod, traj_cheer, traj_heart, traj_strong, traj_handshake,
+                 traj_sad, traj_twinkle]
 
 
 GRIPPER_FACTORIES = [traj_gripper_open, traj_gripper_close]

@@ -224,6 +224,28 @@ def traj_strong() -> JointTrajectory:
     ])
 
 
+def traj_handshake() -> JointTrajectory:
+    """오른손 악수 — REACH 1.5s + shake 4회 1s + REACH center 0.2s + HOLD 3s + slow HOME 2.8s.
+
+    Total ~8.5s. velocity peak 2.4 rad/s (shake direction reversal).
+    사람이 손을 떼더라도 3s HOLD 후 천천히 home 복귀 (release tolerance, force/vision 없음).
+    """
+    REACH    = [0.0, -0.5,  0.0, 0.0]
+    SHAKE_UP = [0.0, -0.5, -0.3, 0.0]
+    SHAKE_DN = [0.0, -0.5,  0.3, 0.0]
+    return _traj([
+        _point(HOME,     0.4),     # settle
+        _point(REACH,    1.5),     # reach forward
+        _point(SHAKE_UP, 1.75),
+        _point(SHAKE_DN, 2.0),
+        _point(SHAKE_UP, 2.25),
+        _point(SHAKE_DN, 2.5),
+        _point(REACH,    2.7),     # shake 중심 복귀
+        _point(REACH,    5.7),     # HOLD 3s (release tolerance)
+        _point(HOME,     8.5),     # 천천히 home 복귀 (2.8s)
+    ])
+
+
 def traj_sad() -> JointTrajectory:
     """슬픔 (엄지 아래) — joint2 down + joint3/joint4 굽힘 (머리 숙이듯), 3.0s."""
     SD = [0.0, -0.3, 1.0, 1.0]

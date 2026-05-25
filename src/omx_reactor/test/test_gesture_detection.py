@@ -157,3 +157,44 @@ def test_wave_insufficient_samples_no_detect():
     wd.update(wrist_x_normalized=0.3)
     wd.update(wrist_x_normalized=0.7)
     assert wd.is_waving() is False
+
+
+# ─── handedness branch — HANDSHAKE trigger ─────────────────────────────
+def test_classify_open_palm_right_hand_middle_is_handshake_offer():
+    """Open_Palm + wrist 중간 + 오른손 + not waving → handshake_offer (NEW)."""
+    assert classify_hand_state(
+        gesture='Open_Palm',
+        wrist_y_normalized=0.7,    # 중간 (> up_threshold 0.55)
+        is_waving=False,
+        handedness='Right',
+    ) == 'handshake_offer'
+
+
+def test_classify_open_palm_left_hand_middle_is_hand_visible():
+    """Open_Palm + wrist 중간 + 왼손 → 기존 hand_visible 유지."""
+    assert classify_hand_state(
+        gesture='Open_Palm',
+        wrist_y_normalized=0.7,
+        is_waving=False,
+        handedness='Left',
+    ) == 'hand_visible'
+
+
+def test_classify_open_palm_no_handedness_middle_is_hand_visible():
+    """Open_Palm + wrist 중간 + handedness 미감지 (None) → hand_visible 폴백."""
+    assert classify_hand_state(
+        gesture='Open_Palm',
+        wrist_y_normalized=0.7,
+        is_waving=False,
+        handedness=None,
+    ) == 'hand_visible'
+
+
+def test_classify_open_palm_right_hand_middle_waving_is_twinkle():
+    """Open_Palm + wrist 중간 + 오른손 + waving → twinkle (waving 우선)."""
+    assert classify_hand_state(
+        gesture='Open_Palm',
+        wrist_y_normalized=0.7,
+        is_waving=True,
+        handedness='Right',
+    ) == 'twinkle'

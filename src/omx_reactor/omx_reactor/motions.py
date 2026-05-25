@@ -25,7 +25,8 @@ class Motion:
 from omx_reactor.trajectories import (
     traj_dance, traj_freeze, traj_console, traj_idle, traj_hello, traj_bye,
     traj_hand_out, traj_hands_up, traj_hands_up_wave,
-    traj_point_back, traj_nod, traj_cheer, traj_heart, traj_strong, traj_sad, traj_twinkle,
+    traj_point_back, traj_nod, traj_cheer, traj_heart, traj_strong, traj_handshake,
+    traj_sad, traj_twinkle,
     traj_gripper_open, traj_gripper_close,
 )
 
@@ -84,6 +85,9 @@ MOTIONS: list[Motion] = [
     Motion('STRONG',
            trigger=lambda c: bool(c.gesture and c.gesture.event == 'closed_fist'),
            priority=82, cooldown_sec=5.0, trajectory=traj_strong),
+    Motion('HANDSHAKE',
+           trigger=lambda c: bool(c.gesture and c.gesture.event == 'handshake_offer'),
+           priority=86, cooldown_sec=10.0, trajectory=traj_handshake),
     # Gripper — 별 controller (reactor 가 trajectory.joint_names 으로 dispatch 분기)
     Motion('GRIPPER_OPEN',
            trigger=lambda c: bool(c.gesture and c.gesture.event == 'gripper_open'),

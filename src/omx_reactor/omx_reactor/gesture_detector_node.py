@@ -117,6 +117,11 @@ class GestureDetectorNode(Node):
             gesture_name = str(cat.category_name)
             confidence = float(cat.score)
 
+        # handedness — 첫 손의 anatomical label ('Left' or 'Right'); 미감지 시 None
+        handedness_name: str | None = None
+        if result.handedness and result.handedness[0]:
+            handedness_name = str(result.handedness[0][0].category_name)
+
         wrist = result.hand_landmarks[0][0]    # NormalizedLandmark, x/y in [0,1]
         wrist_x = float(wrist.x)
         wrist_y = float(wrist.y)
@@ -129,6 +134,7 @@ class GestureDetectorNode(Node):
             gesture=gesture_name,
             wrist_y_normalized=wrist_y,
             is_waving=is_waving,
+            handedness=handedness_name,
             up_threshold=self._up_threshold,
         )
         if event_type is None:
@@ -150,6 +156,7 @@ class GestureDetectorNode(Node):
             'gesture': gesture_name,
             'wrist_y': wrist_y,
             'is_waving': is_waving,
+            'handedness': handedness_name,
         }
         out = String()
         out.data = json.dumps(payload)
