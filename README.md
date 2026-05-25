@@ -125,6 +125,7 @@ ROBOTIS 의 default world 에는 Sensors plugin 빠져 있어 dashboard 의 OMX 
 
   # 2. mediapipe 모델 부트스트랩 (4파일, ~23 MB — *.task / *.tflite 는 .gitignore 대상)
   #    빌드 이전에 받아야 colcon 의  data_files 가 install/share 에 배치합니다.
+  
   MODELS_DIR="src/vendored/dobi_npc_emotion/models"
   GESTURE_DIR="src/omx_reactor/models/gesture"
   
@@ -139,7 +140,8 @@ ROBOTIS 의 default world 에는 Sensors plugin 빠져 있어 dashboard 의 OMX 
   curl -fsSL https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task -o "$GESTURE_DIR/hand_landmarker.task"
   
   ls -lh "$MODELS_DIR" "$GESTURE_DIR"
-  # 4 파일: 3.6M / 4.4M / 8.0M / 7.5M
+  
+  # 4개 파일: 3.6M / 4.4M / 8.0M / 7.5M
   
   
   
