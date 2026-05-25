@@ -112,23 +112,47 @@ ROBOTIS 의 default world 에는 Sensors plugin 빠져 있어 dashboard 의 OMX 
 
 ## Installation
 
-```bash
-git clone https://github.com/<user>/omx-reactor.git ~/omx_reactor
-cd ~/omx_reactor
+## Installation
 
-# Python
-pip install --user -r requirements.txt
-pip uninstall --yes numpy opencv-python opencv-python-headless opencv-contrib-python
-python3 -c "import numpy, cv2; print(numpy.__version__, cv2.__version__)"   # 1.26.4 / 4.6.0
+  ```bash
+  git clone https://github.com/<user>/omx-reactor.git ~/omx_reactor
+  cd ~/omx_reactor
 
-# 모델 부트스트랩 — src/vendored/README.md 참고
+  # 1. Python 의존성 (mediapipe 가 user-site 에 numpy 2.x / opencv-* 끌어오므로 cleanup 필수)
+  pip install --user -r requirements.txt
+  pip uninstall --yes numpy opencv-python opencv-python-headless opencv-contrib-python
+  python3 -c "import numpy, cv2;
+  print(numpy.__version__, cv2.__version__)"   # 1.26.4 / 4.6.0
 
+  # 2. mediapipe 모델 부트스트랩 (4파일, ~23 MB — *.task / *.tflite 는 .gitignore 대상)
+  #    빌드 이전에 받아야 colcon 의  data_files 가 install/share 에 배치합니다.
+  MODELS_DIR="src/vendored/dobi_npc_emotion/models"
+  GESTURE_DIR="src/omx_reactor/models/gesture"
+  
+  mkdir -p "$MODELS_DIR" "$GESTURE_DIR"
+  
+  curl -fsSL https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task -o "$MODELS_DIR/face_landmarker.task"
+  
+  curl -fsSL https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/latest/efficientdet_lite0.tflite -o "$MODELS_DIR/efficientdet_lite0.tflite"
+  
+  curl -fsSL https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/latest/gesture_recognizer.task -o "$GESTURE_DIR/gesture_recognizer.task"
+  
+  curl -fsSL https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task -o "$GESTURE_DIR/hand_landmarker.task"
+  
+  ls -lh "$MODELS_DIR" "$GESTURE_DIR"
+  # 4 파일: 3.6M / 4.4M / 8.0M / 7.5M
+  
 # 빌드
 source /opt/ros/jazzy/setup.bash
 source ~/robot_arm/install/setup.bash   # 또는 apt 의 ros-jazzy-open-manipulator-*
 colcon build --symlink-install
 source install/setup.bash
 ```
+
+# Python
+pip install --user -r requirements.txt
+pip uninstall --yes numpy opencv-python opencv-python-headless opencv-contrib-python
+python3 -c "import numpy, cv2; print(numpy.__version__, cv2.__version__)"   # 1.26.4 / 4.6.0
 
 ## Run
 
