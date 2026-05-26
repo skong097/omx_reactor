@@ -72,8 +72,10 @@ class DashboardNode(Node):
         super().__init__('omx_dashboard_node')
         self.declare_parameter('http_port', 8800)
         self.declare_parameter('engagement_score_alpha', 0.1)
+        self.declare_parameter('mjpeg_input_topic', '/external_cam/image')
         self._port = int(self.get_parameter('http_port').value)
         self._score_alpha = float(self.get_parameter('engagement_score_alpha').value)
+        self._mjpeg_topic = str(self.get_parameter('mjpeg_input_topic').value)
 
         # doby opserver 와 동일 state — engaging snapshot 직접 채움
         self._emotion_state: dict | None = None
@@ -102,7 +104,8 @@ class DashboardNode(Node):
         self._loop: asyncio.AbstractEventLoop | None = None
         self._loop_ready = threading.Event()
 
-        # OMX Gazebo view — /external_cam/image 구독 + 최신 JPEG 캐시 (MJPEG stream 용)
+        # OMX 카메라 view — mjpeg_input_topic 구독 + 최신 JPEG 캐시 (MJPEG stream 용)
+        # sim → /external_cam/image (Gazebo), real → /webcam/image_raw (uvc)
         self._cv_bridge = CvBridge()
         self._latest_jpeg: bytes | None = None
         self._jpeg_lock = threading.Lock()
@@ -110,7 +113,8 @@ class DashboardNode(Node):
         self.create_subscription(EmotionState, '/emotion/state', self._on_emotion, 10)
         self.create_subscription(RapportEvent, '/rapport/event', self._on_rapport, 10)
         self.create_subscription(String, '/omx_reactor/state', self._on_reactor, 10)
-        self.create_subscription(Image, '/external_cam/image', self._on_cam_image, 1)
+        self.create_subscription(Image, self._mjpeg_topic, self._on_cam_image, 1)
+        self.get_logger().info(f'dashboard MJPEG 입력 토픽: {self._mjpeg_topic}')
 
         self._app = self._build_app()
         self._thread = threading.Thread(target=self._serve, daemon=True)

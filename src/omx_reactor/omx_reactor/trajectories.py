@@ -11,21 +11,37 @@ OMX joint 매핑:
   - velocity: <= 2.0 rad/s 의 expressive motion 한계 — 2.5 rad/s gate 로 regression-protect
     (Dynamixel XM430 default ~4.8 rad/s 의 ~40% — visual crispness + safety 균형)
   - self-collision 회피 책임은 작성자
+
+환경 변수:
+  - OMX_ROBOT=sim (default) | real
+    모듈 import 시점에 한 번 평가됨. downstream module (e.g., motions.py)
+    이 factory 함수 reference 를 캡처하면 그 snapshot 을 공유 — 테스트에서
+    env 를 바꾸려면 trajectories 와 downstream module 둘 다 reload 필요.
 """
 from __future__ import annotations
 
+import os
 import random
 
 from builtin_interfaces.msg import Duration
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
-JOINT_NAMES = ['joint1', 'joint2', 'joint3', 'joint4']
-HOME = [0.0, -1.0, 0.5, 0.5]              # OMX 의 일반 home 자세 (정면)
+# OMX_ROBOT=sim (default) 또는 'real' — 실 omx_f hardware 는 5축 + gripper_joint_1
+_IS_REAL = os.environ.get('OMX_ROBOT', 'sim').lower() == 'real'
+
+JOINT_NAMES = (['joint1', 'joint2', 'joint3', 'joint4']
+               + (['joint5'] if _IS_REAL else []))
+HOME_4 = [0.0, -1.0, 0.5, 0.5]                  # OMX 의 일반 home 자세 (4축 base)
+HOME = HOME_4 + ([0.0] if _IS_REAL else [])     # real 은 joint5=0 padding
 
 
 def _point(positions: list[float], t_sec: float) -> JointTrajectoryPoint:
     p = JointTrajectoryPoint()
-    p.positions = list(positions)
+    # real 모드면 4축 positions 에 joint5=0.0 auto-padding (이미 5개면 그대로)
+    pos = list(positions)
+    if _IS_REAL and len(pos) == 4:
+        pos.append(0.0)
+    p.positions = pos
     p.time_from_start = Duration(sec=int(t_sec),
                                  nanosec=int((t_sec - int(t_sec)) * 1e9))
     return p
@@ -296,9 +312,11 @@ def traj_dance(*, _rng: random.Random | None = None) -> JointTrajectory:
 
 
 # ─── gripper trajectory — 별 controller (/gripper_controller/follow_joint_trajectory) ───
-# joint_names = ['gripper_left_joint'] — reactor 가 trajectory.joint_names 으로 dispatch 분기
+# joint_names = sim:'gripper_left_joint' | real:'gripper_joint_1'
+# reactor 가 trajectory.joint_names[0].startswith('gripper') 로 dispatch 분기 (real/sim 동일)
 
-GRIPPER_JOINT_NAMES = ['gripper_left_joint']
+GRIPPER_JOINT_NAMES = (['gripper_joint_1'] if _IS_REAL
+                       else ['gripper_left_joint'])
 GRIPPER_OPEN_ANGLE = 0.019    # OMX default open (rad)
 GRIPPER_CLOSE_ANGLE = -0.010  # OMX default close
 

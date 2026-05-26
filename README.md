@@ -111,6 +111,35 @@ ROBOTIS 의 default world 에는 Sensors plugin 빠져 있어 dashboard 의 OMX 
 `src/vendored/README.md` 의 외부 모델 부트스트랩 절차 참고 (face_landmarker / efficientdet_lite0 / gesture_recognizer / hand_landmarker — 총 4 파일, ~23MB).
 
 
+## Real Hardware (omx_f follower)
+
+### 사전 확인
+1. follower OpenRB-150 만 USB 연결 (leader 는 띄우지 않음)
+2. `ls /dev/serial/by-id/` 로 by-id symlink 확인 → `omx_real.launch.py` 의 default port 와 일치 시 그대로, 다르면 `--port=` 명시
+3. ROBOTIS `open_manipulator_bringup` 가 source 빌드 또는 apt 설치되어 있어야 함
+
+### 첫 동작 검증 (필수)
+풀 데모 전 단발 sanity:
+
+```bash
+# 터미널 A
+ros2 launch omx_reactor omx_real.launch.py
+
+# 터미널 B (init_position 끝나면)
+OMX_ROBOT=real python3 scripts/sanity_real.py
+```
+
+IDLE → CONSOLE 가 안전한 진폭으로 동작하는지 + joint5 가 0 유지하는지 확인 후 풀 데모로 진입.
+
+### sim vs real 자동 분기
+- `--robot=sim` (default): Gazebo + 4축 + `gripper_left_joint` + dashboard MJPEG=`/external_cam/image`
+- `--robot=real`: omx_f bringup + 5축 (joint5=0) + `gripper_joint_1` + dashboard MJPEG=`/webcam/image_raw`
+- 분기 메커니즘: `OMX_ROBOT` 환경 변수 (launch 가 자동 set) + `mjpeg_input_topic` ROS param
+
+### 비상 정지
+OpenRB-150 USB 케이블 분리 (전원 차단) 또는 `Ctrl+C`.
+
+
 ## Installation
 
   ```bash
@@ -161,9 +190,13 @@ python3 -c "import numpy, cv2; print(numpy.__version__, cv2.__version__)"   # 1.
 
 ```bash
 # 데모 (단일 터미널 — Ctrl+C 한 번에 자식 다 종료)
-bash scripts/run_demo.sh                            # default: v4l2 카메라
+bash scripts/run_demo.sh                            # default: sim (Gazebo) + v4l2 카메라
 bash scripts/run_demo.sh --camera=file --file-path=samples/x.mp4
 bash scripts/run_demo.sh --camera=external          # 카메라는 외부 launch
+
+# 실 OMX (omx_f follower) — 반드시 sanity 먼저
+bash scripts/run_demo.sh --robot=real               # default port = by-id symlink
+bash scripts/run_demo.sh --robot=real --port=/dev/ttyACM0
 
 # 종료 (해당 터미널 Ctrl+C — 잔존 청소 + 카메라 device handle release 는 stop_demo)
 bash scripts/stop_demo.sh
