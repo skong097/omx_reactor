@@ -175,6 +175,12 @@ OpenRB-150 USB 케이블 분리 (전원 차단) 또는 `Ctrl+C`.
   
   # 4개 파일: 3.6M / 4.4M / 8.0M / 7.5M
   
+  # dashboard sunglasses overlay 용 face_landmarker (~3.6MB)
+  WEB_STATIC_DIR="src/omx_reactor/omx_reactor/web/static"
+  curl -fsSL https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task -o "$WEB_STATIC_DIR/face_landmarker.task"
+  ls -lh "$WEB_STATIC_DIR/face_landmarker.task"
+  # 3.6M
+  
   
   
 # 빌드
@@ -246,6 +252,7 @@ bash scripts/stop_demo.sh
 - **왼쪽** — 감정 분석 (V·A 좌표 + circumplex SVG 4분면 + EMA 시계열 그래프 + rapport 카운터)
 - **오른쪽** — OMX 모션 (Gazebo MJPEG view + zoom slider 0.5x ~ 3.0x + 실시간 모션 이벤트 list 15개)
 - **반응형** — 폭 < 768px 시 1 column 으로 wrap
+- **썬글라스 overlay** — reactor 가 active 모션 재생 중일 때만 사용자 얼굴 눈 위에 검정 안경 (mediapipe FaceLandmarker, 클라이언트 측 canvas). IDLE 상태 / 얼굴 미감지 시 비표시.
 
 ## Project Structure
 

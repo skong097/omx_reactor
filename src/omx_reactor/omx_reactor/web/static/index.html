@@ -106,7 +106,10 @@
         <span id="gazebo-zoom-label">1.0x</span>
       </div>
       <div class="omx-gazebo-view">
-        <img id="gazebo-view-img" src="/api/gazebo_view.mjpg" alt="OMX Gazebo view" />
+        <div class="cam-stack">
+          <img id="gazebo-view-img" src="/api/gazebo_view.mjpg" alt="OMX Gazebo view" />
+          <canvas id="sunglasses-overlay"></canvas>
+        </div>
       </div>
 
       <h4 class="card__subtitle">모션 이벤트 (현재 상태 + 로봇 모션 ID)</h4>
@@ -136,7 +139,7 @@
   <!-- vendored doby web component + analytics + omx adapter -->
   <script src="/static/engagement-timeline.js"></script>
   <script src="/static/engaging-analytics.js"></script>
-  <script src="/static/app.js"></script>
+  <script type="module" src="/static/app.js"></script>
 
 </body>
 </html>

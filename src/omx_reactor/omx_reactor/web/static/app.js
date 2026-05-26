@@ -9,6 +9,8 @@
  *
  * Step B 의 이벤트 타임라인 시각화도 본 채널의 데이터로 추후 추가.
  */
+import { sunglassesOverlay } from '/static/sunglasses-overlay.js';
+
 (function () {
   const $ = (id) => document.getElementById(id);
   const motionEventsEl = $('motion-events');
@@ -60,6 +62,7 @@
       if (pay.reactor) {
         setStatus(pay.reactor);
         _lastMotionId = pay.reactor.current_motion || null;
+        sunglassesOverlay.setActive(_lastMotionId);
       }
     } else if (msg.type === 'reactor') {
       const p = msg.payload;
@@ -70,6 +73,7 @@
         pushMotionEvent(p);
       }
       _lastMotionId = cur;
+      sunglassesOverlay.setActive(cur);
     }
     // 'emotion' / 'rapport' 는 engaging-analytics 가 직접 /ws/v1/engaging 으로 처리
   }
@@ -79,14 +83,22 @@
     const slider = $('gazebo-zoom');
     const label = $('gazebo-zoom-label');
     const img = $('gazebo-view-img');
+    const overlay = $('sunglasses-overlay');
     if (!slider || !img) return;
     function apply(val) {
       img.style.transform = `scale(${val})`;
+      if (overlay) overlay.style.transform = `scale(${val})`;
       if (label) label.textContent = `${parseFloat(val).toFixed(1)}x`;
     }
     slider.addEventListener('input', (e) => apply(e.target.value));
     apply(slider.value);
   })();
+
+  // sunglasses overlay 초기화 (FaceLandmarker async load — 실패해도 다른 UI 정상)
+  sunglassesOverlay.init(
+    document.getElementById('gazebo-view-img'),
+    document.getElementById('sunglasses-overlay'),
+  );
 
   function connect() {
     const ws = new WebSocket(`ws://${location.host}/ws/stream`);
