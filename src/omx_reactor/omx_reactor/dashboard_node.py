@@ -70,7 +70,7 @@ class DashboardNode(Node):
 
     def __init__(self):
         super().__init__('omx_dashboard_node')
-        self.declare_parameter('http_port', 8800)
+        self.declare_parameter('http_port', 7700)
         self.declare_parameter('engagement_score_alpha', 0.1)
         self.declare_parameter('mjpeg_input_topic', '/external_cam/image')
         self._port = int(self.get_parameter('http_port').value)

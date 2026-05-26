@@ -95,7 +95,7 @@ def generate_launch_description():
         package='omx_reactor', executable='dashboard_node',
         name='omx_dashboard_node', output='screen',
         parameters=[{
-            'http_port': 8800,
+            'http_port': 7700,
             'mjpeg_input_topic': PythonExpression([
                 "'/webcam/image_raw' if '",
                 LaunchConfiguration('robot'),

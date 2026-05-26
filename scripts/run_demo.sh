@@ -48,7 +48,7 @@ bash "$SCRIPT_DIR/stop_demo.sh" >/dev/null 2>&1 || true
 
 # 브라우저 백그라운드 open (3초 후)
 if [ "$BROWSER" = 1 ]; then
-    ( sleep 3 && xdg-open http://localhost:8800/ >/dev/null 2>&1 ) &
+    ( sleep 3 && xdg-open http://localhost:7700/ >/dev/null 2>&1 ) &
 fi
 
 LAUNCH_ARGS="camera:=$CAMERA robot:=$ROBOT"

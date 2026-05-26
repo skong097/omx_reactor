@@ -86,10 +86,10 @@
 |---|---|---|
 | OS | Ubuntu 24.04 | |
 | ROS | ROS 2 Jazzy | desktop 권장 |
-| ROBOTIS | open_manipulator stack | apt 또는 `~/robot_arm/` source 빌드 |
+| ROBOTIS | open_manipulator stack | `sudo apt install ros-jazzy-open-manipulator-description ros-jazzy-open-manipulator-bringup` (권장) 또는 `~/robot_arm/` source 빌드 |
 | Python | mediapipe 0.10.14, fastapi, uvicorn, websockets | `requirements.txt` |
 | 시스템 | numpy 1.26.4, opencv 4.6.0, cv_bridge, v4l2_camera | apt — mediapipe 가 user site 에 numpy 2.x / opencv-* 끌어옴, **cleanup 필수** |
-| 하드웨어 | USB 웹캠 (`/dev/video0`) | gesture 인식 |
+| 하드웨어 | USB 웹캠 | default `/dev/video0`, 노트북 내장 등 다른 device 는 `--video-device=/dev/videoN` |
 | GPU | OpenGL 호환 (ogre2 rendering) | Gazebo 가상 카메라 sensor 필요 |
 
 ### 외부 부트스트랩 (한 번)
@@ -116,7 +116,10 @@ ROBOTIS 의 default world 에는 Sensors plugin 빠져 있어 dashboard 의 OMX 
 ### 사전 확인
 1. follower OpenRB-150 만 USB 연결 (leader 는 띄우지 않음)
 2. `ls /dev/serial/by-id/` 로 by-id symlink 확인 → `omx_real.launch.py` 의 default port 와 일치 시 그대로, 다르면 `--port=` 명시
-3. ROBOTIS `open_manipulator_bringup` 가 source 빌드 또는 apt 설치되어 있어야 함
+3. ROBOTIS `open_manipulator_bringup` + `open_manipulator_description` 가 apt 또는 source 로 설치되어 있어야 함:
+   ```bash
+   sudo apt install ros-jazzy-open-manipulator-description ros-jazzy-open-manipulator-bringup
+   ```
 
 ### 첫 동작 검증 (필수)
 풀 데모 전 단발 sanity:
@@ -176,7 +179,10 @@ OpenRB-150 USB 케이블 분리 (전원 차단) 또는 `Ctrl+C`.
   
 # 빌드
 source /opt/ros/jazzy/setup.bash
-source ~/robot_arm/install/setup.bash   # 또는 apt 의 ros-jazzy-open-manipulator-*
+# open_manipulator: apt 권장 (시스템 wide /opt/ros/jazzy 에 설치됨)
+#   sudo apt install ros-jazzy-open-manipulator-description ros-jazzy-open-manipulator-bringup
+# 또는 source 빌드 방식이면:
+#   source ~/robot_arm/install/setup.bash
 colcon build --symlink-install
 source install/setup.bash
 ```
@@ -190,19 +196,21 @@ python3 -c "import numpy, cv2; print(numpy.__version__, cv2.__version__)"   # 1.
 
 ```bash
 # 데모 (단일 터미널 — Ctrl+C 한 번에 자식 다 종료)
-bash scripts/run_demo.sh                            # default: sim (Gazebo) + v4l2 카메라
+bash scripts/run_demo.sh                            # default: sim (Gazebo) + v4l2 카메라 /dev/video0
 bash scripts/run_demo.sh --camera=file --file-path=samples/x.mp4
 bash scripts/run_demo.sh --camera=external          # 카메라는 외부 launch
+bash scripts/run_demo.sh --video-device=/dev/video2 # 노트북 내장 등 다른 V4L2 device 선택
 
 # 실 OMX (omx_f follower) — 반드시 sanity 먼저
-bash scripts/run_demo.sh --robot=real               # default port = by-id symlink
+bash scripts/run_demo.sh --robot=real                                    # default port = by-id symlink
 bash scripts/run_demo.sh --robot=real --port=/dev/ttyACM0
+bash scripts/run_demo.sh --robot=real --video-device=/dev/video2         # 실 로봇 + 노트북 카메라
 
 # 종료 (해당 터미널 Ctrl+C — 잔존 청소 + 카메라 device handle release 는 stop_demo)
 bash scripts/stop_demo.sh
 ```
 
-대시보드: <http://localhost:8800/>
+대시보드: <http://localhost:7700/> (포트는 `dashboard_node.py` 의 `http_port` param)
 
 ## Demo Scenarios
 
@@ -247,7 +255,9 @@ omx_reactor/
 ├── requirements.txt
 ├── LICENSE                        # Apache-2.0
 ├── scripts/
-│   ├── run_demo.sh                # 단일 터미널 launch
+│   ├── run_demo.sh                # 단일 터미널 launch (sim/real + camera 선택)
+│   ├── run_real.sh                # omx_real 단독 wrapper (cyclone DDS + logs/ tee)
+│   ├── sanity_real.py             # 실하드웨어 IDLE → CONSOLE 단발 sanity
 │   └── stop_demo.sh               # 잔존 청소 + 카메라 release
 └── src/
     ├── omx_reactor/               # 신규 코드 (본 프로젝트)
@@ -264,9 +274,9 @@ omx_reactor/
     │   │   ├── reactor_node.py        # 모든 신호 합성 -> motion dispatch
     │   │   ├── dashboard_node.py      # FastAPI + WebSocket (/ws/v1/engaging + MJPEG)
     │   │   └── web/static/            # index.html + engaging-analytics.js (vendored) + app.js
-    │   ├── launch/
+    │   ├── launch/                    # demo + camera_v4l2/file/external/gazebo + omx_gazebo + omx_real
     │   ├── models/                    # external_cam SDF + gesture model
-    │   └── test/                      # 131 단위 테스트 (TDD)
+    │   └── test/                      # 173 단위 테스트 (TDD)
     └── vendored/                  # doby_controller 발췌 (0 modification — 추후 본 prj 가 doby 로 merge 시 통째 폐기)
         ├── README.md              # 출처 + 모델 부트스트랩 + 수정 정책
         ├── dobi_npc_msgs/         # EmotionState + RapportEvent + PersonTrack(Array) msg
@@ -275,7 +285,7 @@ omx_reactor/
 
 ## Development
 
-### 단위 테스트 (131 tests, pure logic 우선 TDD)
+### 단위 테스트 (173 tests, pure logic 우선 TDD)
 ```bash
 cd src/omx_reactor && python3 -m pytest test/ -v
 ```
@@ -285,8 +295,9 @@ cd src/omx_reactor && python3 -m pytest test/ -v
 | motion_mapper | 9 | priority 내림차순 + trigger 매치 |
 | motion_scheduler | 10 | cooldown / interrupt / 큐 depth 1 |
 | session_tracker | 8 | new_track / track_gone / grace |
-| trajectories | 73 | joint name / 시간 단조 / ±1.2rad 안전 / velocity ≤2.5rad/s |
-| gesture_detection | 21 | visibility cooldown / classify / wave |
+| trajectories | 95 | joint name / 시간 단조 / ±1.2rad 안전 / velocity ≤2.5rad/s |
+| trajectories_real | 26 | omx_f 5축 + gripper_joint_1 분기 (`OMX_ROBOT=real`) |
+| gesture_detection | 25 | visibility cooldown / classify / wave |
 
 ## Roadmap / Status
 
